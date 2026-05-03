@@ -49,3 +49,12 @@ func (e *InvalidValueError) Error() string {
 func (e *InvalidValueError) Unwrap() error {
 	return e.Err
 }
+
+type InvalidOptionError struct {
+	Flag   string
+	ErrMsg string
+}
+
+func (e *InvalidOptionError) Error() string {
+	return fmt.Sprintf("invalid option for flag '%s': %s", e.Flag, e.ErrMsg)
+}

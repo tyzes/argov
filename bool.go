@@ -8,6 +8,10 @@ type boolValue struct {
 	val *bool
 }
 
+func (v *boolValue) IsSliceValue() bool {
+	return false
+}
+
 func (v *boolValue) Set(s string) error {
 	b, err := strconv.ParseBool(s)
 	if err != nil {

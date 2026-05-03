@@ -7,6 +7,10 @@ type genericValue[T any] struct {
 	parse func(string) (T, error)
 }
 
+func (g *genericValue[T]) IsSliceValue() bool {
+	return false
+}
+
 func (g *genericValue[T]) Set(s string) error {
 	v, err := g.parse(s)
 	if err != nil {
@@ -44,6 +48,10 @@ func Custom[T any](p *Parser, names []string, description string, defaultValue T
 type genericSlice[T any] struct {
 	val   *[]T
 	parse func(string) (T, error)
+}
+
+func (g *genericSlice[T]) IsSliceValue() bool {
+	return true
 }
 
 func (g *genericSlice[T]) Set(s string) error {

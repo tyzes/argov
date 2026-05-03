@@ -5,15 +5,32 @@ import (
 	"strings"
 )
 
-func (p *Parser) Parse(args []string) ([]string, error) {
+func (p *Parser) Parse(args []string, opts ...ParseOption) ([]string, error) {
+	for _, f := range p.flags {
+		if f.err != nil {
+			return nil, f.err
+		}
+	}
+
+	po := parsingOptions{}
+	for _, opt := range opts {
+		opt(&po)
+	}
+
+	p.isSet = make(map[string]struct{})
+
+	var positionals = []string{}
 	i := 0
 	for ; i < len(args); i++ {
 		if strings.HasPrefix(args[i], "--") {
 			if len(args[i]) == 2 {
-				if len(args) > i {
-					return args[i+1:], nil
+				if missing := p.checkRequired(); missing != "" {
+					return nil, &MissingRequiredFlagError{missing}
 				}
-				return []string{}, nil
+				if len(args) > i {
+					positionals = append(positionals, args[i+1:]...)
+				}
+				return positionals, nil
 			}
 
 			consumed, err := p.parseDoubleDash(args, i)
@@ -32,18 +49,22 @@ func (p *Parser) Parse(args []string) ([]string, error) {
 				i++
 			}
 		} else {
-			missing := p.checkRequired()
-			if missing != "" {
-				return nil, &MissingRequiredFlagError{missing}
+			if po.noMixing {
+				if missing := p.checkRequired(); missing != "" {
+					return nil, &MissingRequiredFlagError{missing}
+				}
+				if len(args) > i {
+					return args[i:], nil
+				}
+				return nil, nil
 			}
-			return args[i:], nil
+			positionals = append(positionals, args[i])
 		}
 	}
-	missing := p.checkRequired()
-	if missing != "" {
+	if missing := p.checkRequired(); missing != "" {
 		return nil, &MissingRequiredFlagError{missing}
 	}
-	return []string{}, nil
+	return positionals, nil
 }
 
 func (p *Parser) parseSingleDash(args []string, i int) (bool, error) {
@@ -58,14 +79,14 @@ func (p *Parser) parseSingleDash(args []string, i int) (bool, error) {
 
 		isBool := p.parseBool(f)
 		if !isBool {
-			err := p.parseValue(string(args[i][1]), args, i)
+			err := p.parseValue(f, string(args[i][1]), args, i)
 			if err != nil {
 				return false, err
 			}
 			return true, nil
 		}
 	default:
-		isEquals, err := p.parseEquals(args[i][1:], args, i)
+		isEquals, err := p.parseEquals(args[i][1:])
 		if err != nil {
 			return false, err
 		}
@@ -88,7 +109,7 @@ func (p *Parser) parseSingleDash(args []string, i int) (bool, error) {
 }
 
 func (p *Parser) parseDoubleDash(args []string, i int) (bool, error) {
-	isEquals, err := p.parseEquals(args[i][2:], args, i)
+	isEquals, err := p.parseEquals(args[i][2:])
 	if err != nil {
 		return false, err
 	}
@@ -100,7 +121,7 @@ func (p *Parser) parseDoubleDash(args []string, i int) (bool, error) {
 
 		isBool := p.parseBool(f)
 		if !isBool {
-			err := p.parseValue(string(args[i][2:]), args, i)
+			err := p.parseValue(f, string(args[i][2:]), args, i)
 			if err != nil {
 				return false, err
 			}
@@ -119,7 +140,7 @@ func (p *Parser) parseBool(f *flag) bool {
 	return false
 }
 
-func (p *Parser) parseEquals(flag string, args []string, i int) (bool, error) {
+func (p *Parser) parseEquals(flag string) (bool, error) {
 	equals := strings.IndexRune(flag, '=')
 	if equals < 0 {
 		return false, nil
@@ -133,7 +154,7 @@ func (p *Parser) parseEquals(flag string, args []string, i int) (bool, error) {
 		return false, &MissingValueError{Flag: flag[:equals]}
 	}
 
-	err := f.val.Set(flag[equals+1:])
+	err := setValue(f, flag[equals+1:])
 	if err != nil {
 		return true, &InvalidValueError{Flag: flag[:equals], Value: flag[equals+1:], Err: err}
 	}
@@ -142,17 +163,12 @@ func (p *Parser) parseEquals(flag string, args []string, i int) (bool, error) {
 	return true, nil
 }
 
-func (p *Parser) parseValue(flag string, args []string, i int) error {
+func (p *Parser) parseValue(f *flag, flag string, args []string, i int) error {
 	if len(args) <= i+1 {
 		return &MissingValueError{Flag: flag}
 	}
 
-	f, ok := p.lookup[flag]
-	if !ok {
-		return &FlagUnknownError{Flag: flag}
-	}
-
-	err := f.val.Set(args[i+1])
+	err := setValue(f, args[i+1])
 	if err != nil {
 		return &InvalidValueError{Flag: flag, Value: args[i+1], Err: err}
 	}

@@ -5,11 +5,14 @@ type flag struct {
 	description string
 	val         Value
 	required    bool
+	splitRunes  []rune
+	err         error
 }
 
 type Value interface {
 	Set(string) error
 	String() string
+	IsSliceValue() bool
 }
 
 type Parser struct {
@@ -18,14 +21,18 @@ type Parser struct {
 	isSet  map[string]struct{}
 }
 
+type parsingOptions struct {
+	noMixing bool
+}
+
 func NewParser() *Parser {
 	return &Parser{lookup: make(map[string]*flag), isSet: make(map[string]struct{})}
 }
 
 var parser = NewParser()
 
-func Parse(args []string) ([]string, error) {
-	return parser.Parse(args)
+func Parse(args []string, opts ...ParseOption) ([]string, error) {
+	return parser.Parse(args, opts...)
 }
 
 func IsSet(name string) bool {

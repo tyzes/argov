@@ -2,19 +2,30 @@ package argov
 
 type Option func(*flag)
 
+type ParseOption func(*parsingOptions)
+
 func Required() Option {
 	return func(f *flag) {
 		f.required = true
 	}
 }
 
-func (p *Parser) checkRequired() string {
-	for _, f := range p.flags {
-		if f.required {
-			if _, ok := p.isSet[f.names[0]]; !ok {
-				return f.names[0]
+func SplitOn(splitRunes ...rune) Option {
+	return func(f *flag) {
+		if f.val.IsSliceValue() {
+			f.splitRunes = splitRunes
+		} else {
+			var name string
+			if len(f.names) > 0 {
+				name = f.names[0]
 			}
+			f.err = &InvalidOptionError{Flag: name, ErrMsg: "split runes provided on non-slice value"}
 		}
 	}
-	return ""
+}
+
+func NoMixing() ParseOption {
+	return func(po *parsingOptions) {
+		po.noMixing = true
+	}
 }
