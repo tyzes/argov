@@ -4,12 +4,12 @@ import (
 	"fmt"
 )
 
-type FlagUnknownError struct {
+type FlagInvalidError struct {
 	Flag string
 }
 
-func (e *FlagUnknownError) Error() string {
-	return fmt.Sprintf("unknown flag '%s'", e.Flag)
+func (e *FlagInvalidError) Error() string {
+	return fmt.Sprintf("invalid flag '%s'", e.Flag)
 }
 
 type FlagSyntaxError struct {
@@ -28,11 +28,11 @@ func (e *MissingValueError) Error() string {
 	return fmt.Sprintf("missing value for flag '%s'", e.Flag)
 }
 
-type MissingRequiredFlagError struct {
+type MissingRequiredError struct {
 	Flag string
 }
 
-func (e *MissingRequiredFlagError) Error() string {
+func (e *MissingRequiredError) Error() string {
 	return fmt.Sprintf("missing required flag '%s'", e.Flag)
 }
 

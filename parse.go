@@ -19,17 +19,15 @@ func (p *Parser) Parse(args []string, opts ...ParseOption) ([]string, error) {
 
 	p.isSet = make(map[string]struct{})
 
-	var positionals = []string{}
+	var positionals []string
 	i := 0
 	for ; i < len(args); i++ {
 		if strings.HasPrefix(args[i], "--") {
 			if len(args[i]) == 2 {
 				if missing := p.checkRequired(); missing != "" {
-					return nil, &MissingRequiredFlagError{missing}
+					return nil, &MissingRequiredError{missing}
 				}
-				if len(args) > i {
-					positionals = append(positionals, args[i+1:]...)
-				}
+				positionals = append(positionals, args[i+1:]...)
 				return positionals, nil
 			}
 
@@ -51,7 +49,7 @@ func (p *Parser) Parse(args []string, opts ...ParseOption) ([]string, error) {
 		} else {
 			if po.noMixing {
 				if missing := p.checkRequired(); missing != "" {
-					return nil, &MissingRequiredFlagError{missing}
+					return nil, &MissingRequiredError{missing}
 				}
 				if len(args) > i {
 					return args[i:], nil
@@ -62,7 +60,7 @@ func (p *Parser) Parse(args []string, opts ...ParseOption) ([]string, error) {
 		}
 	}
 	if missing := p.checkRequired(); missing != "" {
-		return nil, &MissingRequiredFlagError{missing}
+		return nil, &MissingRequiredError{missing}
 	}
 	return positionals, nil
 }
@@ -74,7 +72,7 @@ func (p *Parser) parseSingleDash(args []string, i int) (bool, error) {
 	case 2:
 		f, ok := p.lookup[args[i][1:]]
 		if !ok {
-			return false, &FlagUnknownError{Flag: args[i][1:]}
+			return false, &FlagInvalidError{Flag: args[i][1:]}
 		}
 
 		isBool := p.parseBool(f)
@@ -94,7 +92,7 @@ func (p *Parser) parseSingleDash(args []string, i int) (bool, error) {
 			for _, arg := range args[i][1:] {
 				f, ok := p.lookup[string(arg)]
 				if !ok {
-					return false, &FlagUnknownError{Flag: string(arg)}
+					return false, &FlagInvalidError{Flag: string(arg)}
 				}
 
 				isBool := p.parseBool(f)
@@ -109,6 +107,9 @@ func (p *Parser) parseSingleDash(args []string, i int) (bool, error) {
 }
 
 func (p *Parser) parseDoubleDash(args []string, i int) (bool, error) {
+	if len(args[i]) == 3 || len(args[i]) >= 4 && args[i][3] == '=' {
+		return false, &FlagSyntaxError{fmt.Sprintf("invalid flag syntax '--%c': single character names must use single dash", args[i][2])}
+	}
 	isEquals, err := p.parseEquals(args[i][2:])
 	if err != nil {
 		return false, err
@@ -116,7 +117,7 @@ func (p *Parser) parseDoubleDash(args []string, i int) (bool, error) {
 	if !isEquals {
 		f, ok := p.lookup[string(args[i][2:])]
 		if !ok {
-			return false, &FlagUnknownError{Flag: string(args[i][2:])}
+			return false, &FlagInvalidError{Flag: string(args[i][2:])}
 		}
 
 		isBool := p.parseBool(f)
@@ -148,7 +149,7 @@ func (p *Parser) parseEquals(flag string) (bool, error) {
 
 	f, ok := p.lookup[flag[:equals]]
 	if !ok {
-		return true, &FlagUnknownError{Flag: flag[:equals]}
+		return true, &FlagInvalidError{Flag: flag[:equals]}
 	}
 	if len(flag)-1 <= equals {
 		return false, &MissingValueError{Flag: flag[:equals]}

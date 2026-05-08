@@ -82,18 +82,18 @@ var generalTests = []struct {
 func TestParse(t *testing.T) {
 	for _, tt := range generalTests {
 		p := argov.NewParser()
-		s := p.String([]string{"s", "string"}, "", "")
-		b := p.Bool([]string{"b", "bool"}, "", false)
-		B := p.Bool([]string{"B", "Bool"}, "", false)
-		i := p.Int([]string{"i", "int"}, "", 0)
-		I := p.Int64([]string{"I", "int64"}, "", 0)
-		f := p.Float32([]string{"f", "float32"}, "", 0)
-		F := p.Float64([]string{"F", "float64"}, "", 0)
-		S := p.StringSlice([]string{"S", "Slice"}, "")
-		argov.Custom(p, []string{"c", "custom"}, "", 0, func(s string) (int64, error) {
+		s := p.String([]string{"s", "string"}, "")
+		b := p.Bool([]string{"b", "bool"}, false)
+		B := p.Bool([]string{"B", "Bool"}, false)
+		i := p.Int([]string{"i", "int"}, 0)
+		I := p.Int64([]string{"I", "int64"}, 0)
+		f := p.Float32([]string{"f", "float32"}, 0)
+		F := p.Float64([]string{"F", "float64"}, 0)
+		S := p.StringSlice([]string{"S", "Slice"})
+		argov.Custom(p, []string{"c", "custom"}, 0, func(s string) (int64, error) {
 			return strconv.ParseInt(s, 0, 64)
 		})
-		C := argov.Slice(p, []string{"C", "Custom"}, "", func(s string) (int64, error) {
+		C := argov.CustomSlice(p, []string{"C", "Custom"}, func(s string) (int64, error) {
 			return strconv.ParseInt(s, 0, 64)
 		})
 
@@ -143,9 +143,9 @@ var errorTests = []struct {
 }{
 	{[]string{"-"}, "*argov.FlagSyntaxError", "invalid syntax: missing flag: '-'"},
 	{[]string{"-bs"}, "*argov.FlagSyntaxError", "invalid syntax: non-boolean flag in flag group: 's'"},
-	{[]string{"-z"}, "*argov.FlagUnknownError", "unknown flag 'z'"},
-	{[]string{"--unknown"}, "*argov.FlagUnknownError", "unknown flag 'unknown'"},
-	{[]string{"-bz"}, "*argov.FlagUnknownError", "unknown flag 'z'"},
+	{[]string{"-z"}, "*argov.FlagInvalidError", "invalid flag 'z'"},
+	{[]string{"--unknown"}, "*argov.FlagInvalidError", "invalid flag 'unknown'"},
+	{[]string{"-bz"}, "*argov.FlagInvalidError", "invalid flag 'z'"},
 	{[]string{"-i", "abc"}, "*argov.InvalidValueError", "invalid value for flag 'i': 'abc'"},
 	{[]string{"-i", "3.14"}, "*argov.InvalidValueError", "invalid value for flag 'i': '3.14'"},
 	{[]string{"-b=maybe"}, "*argov.InvalidValueError", "invalid value for flag 'b': 'maybe'"},
@@ -153,7 +153,7 @@ var errorTests = []struct {
 	{[]string{"-i"}, "*argov.MissingValueError", "missing value for flag 'i'"},
 	{[]string{"--string"}, "*argov.MissingValueError", "missing value for flag 'string'"},
 	{[]string{"--string="}, "*argov.MissingValueError", "missing value for flag 'string'"},
-	{[]string{"--=value"}, "*argov.FlagUnknownError", "unknown flag ''"},
+	{[]string{"--=value"}, "*argov.FlagInvalidError", "invalid flag ''"},
 	{[]string{"-S="}, "*argov.MissingValueError", "missing value for flag 'S'"},
 	{[]string{"-C=foo"}, "*argov.InvalidValueError", "invalid value for flag 'C': 'foo'"},
 	{[]string{"-c=foo"}, "*argov.InvalidValueError", "invalid value for flag 'c': 'foo'"},
@@ -162,17 +162,17 @@ var errorTests = []struct {
 func TestParseErrors(t *testing.T) {
 	for _, tt := range errorTests {
 		p := argov.NewParser()
-		p.Bool([]string{"b", "bool"}, "", false)
-		p.String([]string{"s", "string"}, "", "")
-		p.Int([]string{"i", "int"}, "", -2)
-		p.Int64([]string{"I", "int64"}, "", -2)
-		p.Float32([]string{"f", "float32"}, "", -2)
-		p.Float64([]string{"F", "float64"}, "", -2)
-		p.StringSlice([]string{"S", "Slice"}, "")
-		argov.Custom(p, []string{"c", "custom"}, "", 0, func(s string) (int64, error) {
+		p.Bool([]string{"b", "bool"}, false)
+		p.String([]string{"s", "string"}, "")
+		p.Int([]string{"i", "int"}, -2)
+		p.Int64([]string{"I", "int64"}, -2)
+		p.Float32([]string{"f", "float32"}, -2)
+		p.Float64([]string{"F", "float64"}, -2)
+		p.StringSlice([]string{"S", "Slice"})
+		argov.Custom(p, []string{"c", "custom"}, 0, func(s string) (int64, error) {
 			return strconv.ParseInt(s, 0, 64)
 		})
-		argov.Slice(p, []string{"C", "Custom"}, "", func(s string) (int64, error) {
+		argov.CustomSlice(p, []string{"C", "Custom"}, func(s string) (int64, error) {
 			return strconv.ParseInt(s, 0, 64)
 		})
 
@@ -201,10 +201,10 @@ var optionTests = []struct {
 	{flags: []string{"-b", "-B", "-s", "foo", "-S", "bar", "test", "TEST"}, positionals: []string{"test", "TEST"}, b: true, B: true, s: "foo", S: "bar"},
 	{flags: []string{"-B", "-S", "foo", "--", "bar"}, positionals: []string{"bar"}, B: true, S: "foo"},
 	{flags: []string{"-B", "-s", "foo", "-S", "bar"}, B: true, s: "foo", S: "bar"},
-	{flags: []string{"-b", "-s", "foo", "-S", "bar"}, wantErr: "*argov.MissingRequiredFlagError", wantErrMsg: "missing required flag 'B'"},
-	{flags: []string{"-b", "-B", "-s", "foo"}, wantErr: "*argov.MissingRequiredFlagError", wantErrMsg: "missing required flag 'S'"},
-	{flags: []string{}, wantErr: "*argov.MissingRequiredFlagError", wantErrMsg: "missing required flag 'B'"},
-	{flags: []string{"-b", "-s", "foo"}, wantErr: "*argov.MissingRequiredFlagError", wantErrMsg: "missing required flag 'B'"},
+	{flags: []string{"-b", "-s", "foo", "-S", "bar"}, wantErr: "*argov.MissingRequiredError", wantErrMsg: "missing required flag 'B'"},
+	{flags: []string{"-b", "-B", "-s", "foo"}, wantErr: "*argov.MissingRequiredError", wantErrMsg: "missing required flag 'S'"},
+	{flags: []string{}, wantErr: "*argov.MissingRequiredError", wantErrMsg: "missing required flag 'B'"},
+	{flags: []string{"-b", "-s", "foo"}, wantErr: "*argov.MissingRequiredError", wantErrMsg: "missing required flag 'B'"},
 	{flags: []string{"-B", "-S=abc", "123", "-s"}, positionals: []string{"123", "-s"}, noMixing: true, B: true, S: "abc"},
 	{flags: []string{"0", "-B", "123", "-S", "456", "789"}, positionals: []string{"0", "123", "789"}, B: true, S: "456"},
 	{flags: []string{"-B", "-S", "foo", "--split", "a,b,c"}, B: true, S: "foo", slice: []string{"a", "b", "c"}, split: []rune{','}},
@@ -223,11 +223,11 @@ var optionTests = []struct {
 func TestOptions(t *testing.T) {
 	for _, tt := range optionTests {
 		p := argov.NewParser()
-		b := p.Bool([]string{"b", "bool"}, "", false)
-		B := p.Bool([]string{"B", "Bool"}, "", false, argov.Required())
-		s := p.String([]string{"s", "string"}, "", "")
-		S := p.String([]string{"S", "String"}, "", "", argov.Required())
-		slice := p.StringSlice([]string{"split"}, "", argov.SplitOn(tt.split...))
+		b := p.Bool([]string{"b", "bool"}, false)
+		B := p.Bool([]string{"B", "Bool"}, false, argov.Required())
+		s := p.String([]string{"s", "string"}, "")
+		S := p.String([]string{"S", "String"}, "", argov.Required())
+		slice := p.StringSlice([]string{"split"}, argov.SplitOn(tt.split...))
 
 		var res []string
 		var err error
@@ -276,14 +276,19 @@ func TestOptions(t *testing.T) {
 	}
 }
 
-func TestOptionErrors(t *testing.T) {
+func TestRandom(t *testing.T) {
 	p := argov.NewParser()
-	p.Int([]string{"i"}, "", 0, argov.SplitOn())
-	_, err := p.Parse([]string{})
-	if fmt.Sprintf("%T", err) != "*argov.InvalidOptionError" {
-		t.Errorf("option test: invalid error type: expected \"*argov.InvalidOptionError\", got \"%T\"", err)
-	}
-	if err.Error() != "invalid option for flag 'i': split runes provided on non-slice value" {
-		t.Errorf("option test: invalid error message: expected \"invalid option for flag 'i': split runes provided on non-slice value\", got \"%v\"", err.Error())
+	_ = p.Bool([]string{"b", "bool"}, false, argov.Description("boolean for testing purposes"))
+	_ = p.Bool([]string{"B", "Bool"}, false, argov.Required(), argov.Description("required boolean for testing purposes"))
+	_ = p.String([]string{"s", "string"}, "", argov.Description("string for testing purposes"))
+	_ = p.String([]string{"S", "String"}, "", argov.Required(), argov.Description("required string for testing purposes"))
+	_ = p.StringSlice([]string{"split", "SPLIT"}, argov.Required(), argov.Description("required string-slice for testing purposes"), argov.Placeholder("PLACEHOLDER"), argov.SplitOn(';'))
+	_ = p.StringSlice([]string{"a", "A"}, argov.Description("string-slice 1 for testing purposes"), argov.SplitOn(',', ';', ':'))
+	_ = p.StringSlice([]string{"str"}, argov.Description("string-slice 2 for testing purposes"))
+
+	generated := p.GenerateHelp()
+	expected := " -b      --bool                           boolean for testing purposes\n -B      --Bool                           required boolean for testing purposes (Required)\n -s      --string                         string for testing purposes\n -S      --String                         required string for testing purposes (Required)\n         --split, --SPLIT <PLACEHOLDER>   required string-slice for testing purposes (Required, Accepts repeated calls or multiple values separated by ';')\n -a, -A                                   string-slice 1 for testing purposes (Accepts repeated calls or multiple values separated by ',' or ';' or ':')\n         --str                            string-slice 2 for testing purposes (Accepts repeated calls)"
+	if generated != expected {
+		t.Errorf("help: expected \n%s\ngot\n%s", expected, generated)
 	}
 }

@@ -25,13 +25,13 @@ func splitOnRunes(str string, runes []rune) []string {
 func setValue(f *flag, str string) error {
 	if f.val.IsSliceValue() && len(f.splitRunes) > 0 {
 		for _, s := range splitOnRunes(str, f.splitRunes) {
-			err := f.val.Set(s)
+			err := f.val.set(s)
 			if err != nil {
 				return err
 			}
 		}
 	} else {
-		return f.val.Set(str)
+		return f.val.set(str)
 	}
 	return nil
 }

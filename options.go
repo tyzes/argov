@@ -4,6 +4,18 @@ type Option func(*flag)
 
 type ParseOption func(*parsingOptions)
 
+func Description(description string) Option {
+	return func(f *flag) {
+		f.description = description
+	}
+}
+
+func Placeholder(placeholder string) Option {
+	return func(f *flag) {
+		f.placeholder = placeholder
+	}
+}
+
 func Required() Option {
 	return func(f *flag) {
 		f.required = true

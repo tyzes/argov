@@ -11,7 +11,7 @@ func (g *genericValue[T]) IsSliceValue() bool {
 	return false
 }
 
-func (g *genericValue[T]) Set(s string) error {
+func (g *genericValue[T]) set(s string) error {
 	v, err := g.parse(s)
 	if err != nil {
 		return err
@@ -24,14 +24,13 @@ func (g *genericValue[T]) String() string {
 	return fmt.Sprintf("%v", *g.val)
 }
 
-func Custom[T any](p *Parser, names []string, description string, defaultValue T, parse func(string) (T, error), opts ...Option) *T {
+func Custom[T any](p *Parser, names []string, defaultValue T, parse func(string) (T, error), opts ...Option) *T {
 	val := new(T)
 	*val = defaultValue
 
 	f := &flag{
-		names:       names,
-		description: description,
-		val:         &genericValue[T]{val, parse},
+		names: names,
+		val:   &genericValue[T]{val, parse},
 	}
 
 	for _, opt := range opts {
@@ -54,7 +53,7 @@ func (g *genericSlice[T]) IsSliceValue() bool {
 	return true
 }
 
-func (g *genericSlice[T]) Set(s string) error {
+func (g *genericSlice[T]) set(s string) error {
 	v, err := g.parse(s)
 	if err != nil {
 		return err
@@ -67,13 +66,12 @@ func (g *genericSlice[T]) String() string {
 	return fmt.Sprintf("%v", *g.val)
 }
 
-func Slice[T any](p *Parser, names []string, description string, parse func(string) (T, error), opts ...Option) *[]T {
+func CustomSlice[T any](p *Parser, names []string, parse func(string) (T, error), opts ...Option) *[]T {
 	val := new([]T)
 
 	f := &flag{
-		names:       names,
-		description: description,
-		val:         &genericSlice[T]{val, parse},
+		names: names,
+		val:   &genericSlice[T]{val, parse},
 	}
 
 	for _, opt := range opts {

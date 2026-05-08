@@ -1,21 +1,21 @@
 package argov
 
-func String(names []string, description string, defaultValue string, opts ...Option) *string {
-	return parser.String(names, description, defaultValue, opts...)
+func String(names []string, defaultValue string, opts ...Option) *string {
+	return parser.String(names, defaultValue, opts...)
 }
 
-func (p *Parser) String(names []string, description string, defaultValue string, opts ...Option) *string {
-	return Custom[string](p, names, description, defaultValue, func(s string) (string, error) {
+func (p *Parser) String(names []string, defaultValue string, opts ...Option) *string {
+	return Custom[string](p, names, defaultValue, func(s string) (string, error) {
 		return s, nil
 	}, opts...)
 }
 
-func StringSlice(names []string, description string, opts ...Option) *[]string {
-	return parser.StringSlice(names, description, opts...)
+func StringSlice(names []string, opts ...Option) *[]string {
+	return parser.StringSlice(names, opts...)
 }
 
-func (p *Parser) StringSlice(names []string, description string, opts ...Option) *[]string {
-	return Slice(p, names, description, func(s string) (string, error) {
+func (p *Parser) StringSlice(names []string, opts ...Option) *[]string {
+	return CustomSlice(p, names, func(s string) (string, error) {
 		return s, nil
 	}, opts...)
 }

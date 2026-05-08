@@ -3,6 +3,7 @@ package argov
 type flag struct {
 	names       []string
 	description string
+	placeholder string
 	val         Value
 	required    bool
 	splitRunes  []rune
@@ -10,7 +11,7 @@ type flag struct {
 }
 
 type Value interface {
-	Set(string) error
+	set(string) error
 	String() string
 	IsSliceValue() bool
 }

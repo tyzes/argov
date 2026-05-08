@@ -12,7 +12,7 @@ func (v *boolValue) IsSliceValue() bool {
 	return false
 }
 
-func (v *boolValue) Set(s string) error {
+func (v *boolValue) set(s string) error {
 	b, err := strconv.ParseBool(s)
 	if err != nil {
 		return err
@@ -25,18 +25,17 @@ func (v *boolValue) String() string {
 	return strconv.FormatBool(*v.val)
 }
 
-func Bool(names []string, description string, defaultValue bool, opts ...Option) *bool {
-	return parser.Bool(names, description, defaultValue, opts...)
+func Bool(names []string, defaultValue bool, opts ...Option) *bool {
+	return parser.Bool(names, defaultValue, opts...)
 }
 
-func (p *Parser) Bool(names []string, description string, defaultValue bool, opts ...Option) *bool {
+func (p *Parser) Bool(names []string, defaultValue bool, opts ...Option) *bool {
 	val := new(bool)
 	*val = defaultValue
 
 	f := &flag{
-		names:       names,
-		description: description,
-		val:         &boolValue{val},
+		names: names,
+		val:   &boolValue{val},
 	}
 
 	for _, opt := range opts {
