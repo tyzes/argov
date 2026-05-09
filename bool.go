@@ -8,7 +8,7 @@ type boolValue struct {
 	val *bool
 }
 
-func (v *boolValue) IsSliceValue() bool {
+func (v *boolValue) isSliceValue() bool {
 	return false
 }
 
@@ -21,14 +21,16 @@ func (v *boolValue) set(s string) error {
 	return nil
 }
 
-func (v *boolValue) String() string {
+func (v *boolValue) string() string {
 	return strconv.FormatBool(*v.val)
 }
 
+// Bool is a wrapper for defaultParser.Bool().
 func Bool(names []string, defaultValue bool, opts ...Option) *bool {
-	return parser.Bool(names, defaultValue, opts...)
+	return defaultParser.Bool(names, defaultValue, opts...)
 }
 
+// Bool registers a new boolean-flag.
 func (p *Parser) Bool(names []string, defaultValue bool, opts ...Option) *bool {
 	val := new(bool)
 	*val = defaultValue

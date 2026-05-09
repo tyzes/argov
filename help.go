@@ -4,6 +4,8 @@ import (
 	"bytes"
 )
 
+// FlagInformation contains information useful for writing a custom help menu.
+// It is obtained using Parser.GetFlags().
 type FlagInformation struct {
 	Names       []string
 	Description string
@@ -13,22 +15,26 @@ type FlagInformation struct {
 	SplitRunes  []rune
 }
 
+// GetFlags is a wrapper for defaultParser.GetFlags().
 func GetFlags() []FlagInformation {
-	return parser.GetFlags()
+	return defaultParser.GetFlags()
 }
 
+// GetFlags returns the information of all flags registered with a parser.
 func (p *Parser) GetFlags() []FlagInformation {
 	var flags []FlagInformation
 	for _, f := range p.flags {
-		flags = append(flags, FlagInformation{f.names, f.description, f.placeholder, f.required, f.val.IsSliceValue(), f.splitRunes})
+		flags = append(flags, FlagInformation{f.names, f.description, f.placeholder, f.required, f.val.isSliceValue(), f.splitRunes})
 	}
 	return flags
 }
 
+// GenerateHelp is a wrapper for defaultParser.GenerateHelp().
 func GenerateHelp() string {
-	return parser.GenerateHelp()
+	return defaultParser.GenerateHelp()
 }
 
+// GenerateHelp returns a formatted overview of all registered flags.
 func (p *Parser) GenerateHelp() string {
 	var buf bytes.Buffer
 
@@ -109,7 +115,7 @@ func (p *Parser) GenerateHelp() string {
 			buf.WriteString(" (Required")
 			hintsLen++
 		}
-		if f.val.IsSliceValue() {
+		if f.val.isSliceValue() {
 			if hintsLen > 0 {
 				buf.WriteString(", ")
 			} else {

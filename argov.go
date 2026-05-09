@@ -4,18 +4,20 @@ type flag struct {
 	names       []string
 	description string
 	placeholder string
-	val         Value
+	val         value
 	required    bool
 	splitRunes  []rune
 	err         error
 }
 
-type Value interface {
+type value interface {
 	set(string) error
-	String() string
-	IsSliceValue() bool
+	isSliceValue() bool
+	string() string
 }
 
+// Parser is the central struct and holds all flags registered to it.
+// New parsers should only be created using the NewParser() function.
 type Parser struct {
 	flags  []*flag
 	lookup map[string]*flag
@@ -26,20 +28,25 @@ type parsingOptions struct {
 	noMixing bool
 }
 
+// NewParser returns a new parser.
 func NewParser() *Parser {
 	return &Parser{lookup: make(map[string]*flag), isSet: make(map[string]struct{})}
 }
 
-var parser = NewParser()
+var defaultParser = NewParser()
 
+// Parse is a wrapper for defaultParser.Parse().
 func Parse(args []string, opts ...ParseOption) ([]string, error) {
-	return parser.Parse(args, opts...)
+	return defaultParser.Parse(args, opts...)
 }
 
+// IsSet is a wrapper for defaultParser.IsSet().
 func IsSet(name string) bool {
-	return parser.IsSet(name)
+	return defaultParser.IsSet(name)
 }
 
+// IsSet returns if the given flag has been passed into Parse().
+// If a flag has multiple names, any name can be passed to IsSet.
 func (p *Parser) IsSet(name string) bool {
 	f, ok := p.lookup[name]
 	if !ok {

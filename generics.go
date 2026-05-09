@@ -7,7 +7,7 @@ type genericValue[T any] struct {
 	parse func(string) (T, error)
 }
 
-func (g *genericValue[T]) IsSliceValue() bool {
+func (g *genericValue[T]) isSliceValue() bool {
 	return false
 }
 
@@ -20,10 +20,11 @@ func (g *genericValue[T]) set(s string) error {
 	return nil
 }
 
-func (g *genericValue[T]) String() string {
+func (g *genericValue[T]) string() string {
 	return fmt.Sprintf("%v", *g.val)
 }
 
+// Custom registers a new flag with a custom type and a custom parsing function.
 func Custom[T any](p *Parser, names []string, defaultValue T, parse func(string) (T, error), opts ...Option) *T {
 	val := new(T)
 	*val = defaultValue
@@ -49,7 +50,7 @@ type genericSlice[T any] struct {
 	parse func(string) (T, error)
 }
 
-func (g *genericSlice[T]) IsSliceValue() bool {
+func (g *genericSlice[T]) isSliceValue() bool {
 	return true
 }
 
@@ -62,10 +63,11 @@ func (g *genericSlice[T]) set(s string) error {
 	return nil
 }
 
-func (g *genericSlice[T]) String() string {
+func (g *genericSlice[T]) string() string {
 	return fmt.Sprintf("%v", *g.val)
 }
 
+// CustomSlice registers a new slice-flag with a custom type and a custom parsing function.
 func CustomSlice[T any](p *Parser, names []string, parse func(string) (T, error), opts ...Option) *[]T {
 	val := new([]T)
 

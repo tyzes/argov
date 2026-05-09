@@ -5,6 +5,7 @@ import (
 	"strings"
 )
 
+// Parse parses the provided arguments using the previously registered flags.
 func (p *Parser) Parse(args []string, opts ...ParseOption) ([]string, error) {
 	for _, f := range p.flags {
 		if f.err != nil {
